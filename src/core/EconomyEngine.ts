@@ -37,6 +37,7 @@ export class EconomyEngine {
   private bus: EventBus;
   private tickInterval: number | null = null;
   private readonly TICK_MS = 1_000; // 1-second passive income tick
+  private globalClickMultiplier: number = 1;
 
   constructor(savedState?: Partial<EconomyState>) {
     this.bus = EventBus.getInstance();
@@ -45,9 +46,14 @@ export class EconomyEngine {
 
   /* ── Public API ─────────────────────────────────────────── */
 
+  public setClickMultiplier(mult: number): void {
+    this.globalClickMultiplier = mult;
+    this.bus.emit(GameEvents.STATS_UPDATED, this.getSnapshot());
+  }
+
   /** Process a player click. Returns the amount earned. */
   public click(): number {
-    const earned = this.state.clickPower;
+    const earned = this.state.clickPower * this.globalClickMultiplier;
     this.state.balance += earned;
     this.state.totalEarned += earned;
     this.state.totalClicks += 1;
@@ -93,6 +99,17 @@ export class EconomyEngine {
   public upgradePassiveIncome(amount: number): void {
     this.state.passiveIncome += amount;
     this.bus.emit(GameEvents.STATS_UPDATED, this.getSnapshot());
+  }
+
+  /** Set passive income to an absolute value (called by BusinessManager). */
+  public setPassiveIncome(total: number): void {
+    this.state.passiveIncome = total;
+    this.bus.emit(GameEvents.STATS_UPDATED, this.getSnapshot());
+  }
+
+  /** Get the current balance. */
+  public getBalance(): number {
+    return this.state.balance;
   }
 
   /** Spend money. Returns true if the player can afford it. */

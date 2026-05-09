@@ -1,12 +1,8 @@
 /**
  * MainView — All DOM interaction lives here.
  *
+ * Now supports tab navigation between Empire (clicker+shop) and Stocks.
  * Subscribes to EventBus for state changes.
- * Renders the clicker UI with juicy visual feedback:
- *  • Floating "+$X" particles on click
- *  • Button scale pulse animation
- *  • Smooth counter roll-up via CSS transitions
- *  • Money particle burst effect
  */
 
 import { EventBus, GameEvents } from '../core/EventBus';
@@ -23,6 +19,7 @@ export class MainView {
   private particleContainer!: HTMLElement;
 
   private onClickCallback: (() => void) | null = null;
+  private activeTab: 'empire' | 'stocks' | 'lifestyle' = 'empire';
 
   constructor(appRoot: HTMLElement) {
     this.bus = EventBus.getInstance();
@@ -32,7 +29,6 @@ export class MainView {
     this.subscribe();
   }
 
-  /** Register the click handler (wired by main.ts to call engine.click). */
   public onClickEarn(cb: () => void): void {
     this.onClickCallback = cb;
   }
@@ -42,7 +38,6 @@ export class MainView {
   private render(): void {
     this.app.innerHTML = `
       <div class="game-container">
-        <!-- Top bar -->
         <header class="top-bar">
           <div class="logo">
             <span class="logo-icon">💰</span>
@@ -54,7 +49,7 @@ export class MainView {
           </div>
         </header>
 
-        <!-- Balance display -->
+        <!-- Balance (always visible) -->
         <section class="balance-section">
           <div class="balance-label">YOUR FORTUNE</div>
           <div class="balance-amount" id="balance-display">$0</div>
@@ -65,35 +60,51 @@ export class MainView {
           </div>
         </section>
 
-        <!-- Click area -->
-        <section class="click-section">
-          <div class="particle-container" id="particle-container"></div>
-          <button class="click-btn" id="click-btn">
-            <span class="click-btn-icon">🤑</span>
-            <span class="click-btn-label">TAP TO EARN</span>
-            <span class="click-btn-power" id="click-power-display">+$1 per click</span>
-          </button>
-        </section>
+        <!-- Tab bar -->
+        <nav class="tab-bar">
+          <button class="tab-btn active" id="tab-empire" data-tab="empire">🏢 Empire</button>
+          <button class="tab-btn" id="tab-stocks" data-tab="stocks">📈 Stocks</button>
+          <button class="tab-btn" id="tab-lifestyle" data-tab="lifestyle">💎 Lifestyle</button>
+        </nav>
 
-        <!-- Stats bar -->
-        <section class="stats-bar">
-          <div class="stat-card">
-            <div class="stat-value" id="total-clicks-display">0</div>
-            <div class="stat-label">Total Clicks</div>
-          </div>
-          <div class="stat-card">
-            <div class="stat-value" id="click-power-stat">1</div>
-            <div class="stat-label">Click Power</div>
-          </div>
-          <div class="stat-card">
-            <div class="stat-value" id="passive-stat">0</div>
-            <div class="stat-label">$/Second</div>
-          </div>
-        </section>
+        <!-- Empire tab content -->
+        <div class="tab-content" id="content-empire">
+          <section class="click-section">
+            <div class="particle-container" id="particle-container"></div>
+            <button class="click-btn" id="click-btn">
+              <span class="click-btn-icon">🤑</span>
+              <span class="click-btn-label">TAP TO EARN</span>
+              <span class="click-btn-power" id="click-power-display">+$1 per click</span>
+            </button>
+          </section>
+          <div id="shop-anchor"></div>
+          <section class="stats-bar">
+            <div class="stat-card">
+              <div class="stat-value" id="total-clicks-display">0</div>
+              <div class="stat-label">Total Clicks</div>
+            </div>
+            <div class="stat-card">
+              <div class="stat-value" id="click-power-stat">1</div>
+              <div class="stat-label">Click Power</div>
+            </div>
+            <div class="stat-card">
+              <div class="stat-value" id="passive-stat">0</div>
+              <div class="stat-label">$/Second</div>
+            </div>
+          </section>
+        </div>
+
+        <!-- Stocks tab content (StocksPanel injects here) -->
+        <div class="tab-content" id="content-stocks" style="display:none"></div>
+
+        <!-- Lifestyle tab content (LifestylePanel injects here) -->
+        <div class="tab-content" id="content-lifestyle" style="display:none"></div>
+
+        <!-- News ticker (always visible) -->
+        <div id="news-anchor"></div>
       </div>
     `;
 
-    // Cache DOM refs
     this.balanceEl = document.getElementById('balance-display')!;
     this.clickPowerEl = document.getElementById('click-power-display')!;
     this.passiveEl = document.getElementById('passive-display')!;
@@ -109,15 +120,34 @@ export class MainView {
       e.preventDefault();
       this.onClickCallback?.();
     });
-
-    // Prevent context menu on long-press (mobile)
     this.clickBtn.addEventListener('contextmenu', (e) => e.preventDefault());
+
+    // Tab switching
+    document.getElementById('tab-empire')?.addEventListener('click', () => this.switchTab('empire'));
+    document.getElementById('tab-stocks')?.addEventListener('click', () => this.switchTab('stocks'));
+    document.getElementById('tab-lifestyle')?.addEventListener('click', () => this.switchTab('lifestyle'));
+  }
+
+  private switchTab(tab: 'empire' | 'stocks' | 'lifestyle'): void {
+    if (this.activeTab === tab) return;
+    this.activeTab = tab;
+
+    // Toggle active class on tab buttons
+    document.querySelectorAll('.tab-btn').forEach(el => el.classList.remove('active'));
+    document.getElementById(`tab-${tab}`)?.classList.add('active');
+
+    // Toggle tab content visibility
+    document.getElementById('content-empire')!.style.display = tab === 'empire' ? '' : 'none';
+    document.getElementById('content-stocks')!.style.display = tab === 'stocks' ? '' : 'none';
+    document.getElementById('content-lifestyle')!.style.display = tab === 'lifestyle' ? '' : 'none';
+
+    this.bus.emit(GameEvents.TAB_CHANGED, tab);
   }
 
   /* ── EventBus Subscriptions ─────────────────────────────── */
 
   private subscribe(): void {
-    this.bus.on(GameEvents.CLICK_EARNED, (earned: number, _balance: number) => {
+    this.bus.on(GameEvents.CLICK_EARNED, (earned: number) => {
       this.spawnClickParticle(earned);
       this.pulseButton();
     });
@@ -130,7 +160,7 @@ export class MainView {
       this.updateStats(state);
     });
 
-    this.bus.on(GameEvents.PASSIVE_TICK, (income: number, _balance: number) => {
+    this.bus.on(GameEvents.PASSIVE_TICK, (income: number) => {
       this.spawnPassiveParticle(income);
     });
 
@@ -149,50 +179,40 @@ export class MainView {
     this.clickPowerEl.textContent = `+$${this.formatNumber(state.clickPower)} per click`;
     this.passiveEl.innerHTML = `<span class="stat-icon">⏱</span> $${this.formatNumber(state.passiveIncome)}/sec`;
     this.totalClicksEl.textContent = this.formatNumber(state.totalClicks);
-    (document.getElementById('click-power-stat') as HTMLElement).textContent = this.formatNumber(state.clickPower);
-    (document.getElementById('passive-stat') as HTMLElement).textContent = this.formatNumber(state.passiveIncome);
+    const cpStat = document.getElementById('click-power-stat');
+    const psStat = document.getElementById('passive-stat');
+    if (cpStat) cpStat.textContent = this.formatNumber(state.clickPower);
+    if (psStat) psStat.textContent = this.formatNumber(state.passiveIncome);
   }
 
   /* ── Juicy Visual Feedback ──────────────────────────────── */
 
-  /** Floating "+$X" text that rises and fades out. */
   private spawnClickParticle(amount: number): void {
     const particle = document.createElement('div');
     particle.className = 'click-particle';
     particle.textContent = `+$${this.formatNumber(amount)}`;
-
-    // Randomise horizontal offset for visual variety
     const offsetX = (Math.random() - 0.5) * 120;
     particle.style.setProperty('--offset-x', `${offsetX}px`);
-
     this.particleContainer.appendChild(particle);
-
-    // Remove after animation completes (800ms)
     setTimeout(() => particle.remove(), 800);
   }
 
-  /** Subtle floating indicator for passive income ticks. */
   private spawnPassiveParticle(amount: number): void {
     if (amount <= 0) return;
     const particle = document.createElement('div');
     particle.className = 'passive-particle';
     particle.textContent = `+$${this.formatNumber(amount)}`;
-
     const offsetX = (Math.random() - 0.5) * 200;
     particle.style.setProperty('--offset-x', `${offsetX}px`);
-
     this.particleContainer.appendChild(particle);
     setTimeout(() => particle.remove(), 1200);
   }
 
-  /** Button scale punch on press. */
   private pulseButton(): void {
     this.clickBtn.classList.add('click-pulse');
-    // Remove class after animation so it can replay
     setTimeout(() => this.clickBtn.classList.remove('click-pulse'), 150);
   }
 
-  /** Brief flash on the save indicator. */
   private flashSaveIndicator(): void {
     const el = document.getElementById('save-indicator');
     if (!el) return;

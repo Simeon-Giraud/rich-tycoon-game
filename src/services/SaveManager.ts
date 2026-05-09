@@ -7,6 +7,9 @@
  */
 
 import { EconomyEngine, EconomyState } from '../core/EconomyEngine';
+import { BusinessManager, BusinessState } from '../core/BusinessManager';
+import { StockMarket, PortfolioEntry } from '../core/StockMarket';
+import { LifestyleManager } from '../core/LifestyleManager';
 import { EventBus, GameEvents } from '../core/EventBus';
 
 const SAVE_KEY = 'billionaire_tycoon_save';
@@ -14,11 +17,17 @@ const AUTO_SAVE_MS = 15_000; // every 15 seconds
 
 export class SaveManager {
   private engine: EconomyEngine;
+  private bizManager: BusinessManager;
+  private stockMarket: StockMarket;
+  private lifestyle: LifestyleManager;
   private bus: EventBus;
   private autoSaveTimer: number | null = null;
 
-  constructor(engine: EconomyEngine) {
+  constructor(engine: EconomyEngine, bizManager: BusinessManager, stockMarket: StockMarket, lifestyle: LifestyleManager) {
     this.engine = engine;
+    this.bizManager = bizManager;
+    this.stockMarket = stockMarket;
+    this.lifestyle = lifestyle;
     this.bus = EventBus.getInstance();
     this.bindBrowserEvents();
   }
@@ -29,10 +38,16 @@ export class SaveManager {
   public save(): void {
     try {
       const snapshot = this.engine.getSnapshot();
+      const bizSnapshot = this.bizManager.getSnapshot();
+      const stockSnapshot = this.stockMarket.getSnapshot();
+      const lifestyleSnapshot = this.lifestyle.getSnapshot();
       const payload = JSON.stringify({
-        version: 1,
+        version: 4,
         timestamp: Date.now(),
         state: snapshot,
+        businesses: bizSnapshot,
+        stocks: stockSnapshot,
+        lifestyle: lifestyleSnapshot,
       });
       localStorage.setItem(SAVE_KEY, payload);
       this.bus.emit(GameEvents.GAME_SAVED);
@@ -65,6 +80,23 @@ export class SaveManager {
       }
 
       this.engine.loadState(offlineState);
+
+      // Load business state if present
+      if (parsed.businesses) {
+        this.bizManager.loadState(parsed.businesses as BusinessState[]);
+        this.engine.setPassiveIncome(this.bizManager.getTotalPassiveIncome());
+      }
+
+      // Load stock portfolio if present
+      if (parsed.stocks) {
+        this.stockMarket.loadState(parsed.stocks as { portfolio?: PortfolioEntry[] });
+      }
+
+      // Load lifestyle if present
+      if (parsed.lifestyle) {
+        this.lifestyle.loadState(parsed.lifestyle as string[]);
+      }
+
       this.bus.emit(GameEvents.GAME_LOADED);
       console.log('[SaveManager] Game loaded');
       return true;

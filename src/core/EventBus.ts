@@ -44,4 +44,12 @@ export const GameEvents = {
   STATS_UPDATED: 'economy:statsUpdated',
   GAME_SAVED: 'save:gameSaved',
   GAME_LOADED: 'save:gameLoaded',
+  BUSINESS_PURCHASED: 'business:purchased',
+  BUSINESSES_CHANGED: 'business:changed',
+  STOCKS_UPDATED: 'stocks:updated',
+  STOCK_TRADED: 'stocks:traded',
+  STOCK_NEWS: 'stocks:news',
+  NEWS_HEADLINE: 'news:headline',
+  TAB_CHANGED: 'ui:tabChanged',
+  LIFESTYLE_PURCHASED: 'lifestyle:purchased',
 } as const;
