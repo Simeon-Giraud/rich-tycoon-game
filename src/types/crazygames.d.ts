@@ -19,6 +19,10 @@ interface CrazyGamesSDK {
     getUser: () => Promise<any>;
     getSystemInfo: () => any;
   };
+  data: {
+    save: (data: string) => Promise<void>;
+    load: () => Promise<string | null>;
+  };
 }
 
 interface Window {

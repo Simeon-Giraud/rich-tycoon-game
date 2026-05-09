@@ -11,6 +11,7 @@ import { BusinessManager, BusinessState } from '../core/BusinessManager';
 import { StockMarket, PortfolioEntry } from '../core/StockMarket';
 import { LifestyleManager } from '../core/LifestyleManager';
 import { EventBus, GameEvents } from '../core/EventBus';
+import { sdkManager } from './SDKManager';
 
 const SAVE_KEY = 'billionaire_tycoon_save';
 const AUTO_SAVE_MS = 15_000; // every 15 seconds
@@ -34,7 +35,7 @@ export class SaveManager {
 
   /* ── Public API ─────────────────────────────────────────── */
 
-  /** Save the current state to localStorage. */
+  /** Save the current state to localStorage + cloud. */
   public save(): void {
     try {
       const snapshot = this.engine.getSnapshot();
@@ -42,7 +43,7 @@ export class SaveManager {
       const stockSnapshot = this.stockMarket.getSnapshot();
       const lifestyleSnapshot = this.lifestyle.getSnapshot();
       const payload = JSON.stringify({
-        version: 4,
+        version: 5,
         timestamp: Date.now(),
         state: snapshot,
         businesses: bizSnapshot,
@@ -50,19 +51,33 @@ export class SaveManager {
         lifestyle: lifestyleSnapshot,
       });
       localStorage.setItem(SAVE_KEY, payload);
+      // Also push to CrazyGames cloud
+      sdkManager.cloudSave(payload);
       this.bus.emit(GameEvents.GAME_SAVED);
-      console.log('[SaveManager] Game saved');
     } catch (err) {
       console.error('[SaveManager] Save failed:', err);
     }
   }
 
-  /** Load state from localStorage into the engine. Returns true if a save was found. */
-  public load(): boolean {
+  /** Load state — tries cloud first, then localStorage. */
+  public async load(): Promise<boolean> {
     try {
-      const raw = localStorage.getItem(SAVE_KEY);
-      if (!raw) return false;
+      // Try cloud save first (CrazyGames), fall back to localStorage
+      let raw = await sdkManager.cloudLoad();
+      const localRaw = localStorage.getItem(SAVE_KEY);
 
+      // Pick whichever save is more recent
+      if (raw && localRaw) {
+        const cloudParsed = JSON.parse(raw);
+        const localParsed = JSON.parse(localRaw);
+        if ((localParsed.timestamp ?? 0) > (cloudParsed.timestamp ?? 0)) {
+          raw = localRaw;
+        }
+      } else if (!raw) {
+        raw = localRaw;
+      }
+
+      if (!raw) return false;
       const parsed = JSON.parse(raw);
       if (!parsed?.state) return false;
 
@@ -71,28 +86,25 @@ export class SaveManager {
       const offlineState = parsed.state as EconomyState;
 
       if (offlineSeconds > 0 && offlineState.passiveIncome > 0) {
-        // Cap offline earnings at 2 hours to prevent absurd numbers
+        // Cap offline earnings at 2 hours
         const cappedSeconds = Math.min(offlineSeconds, 7200);
         const offlineEarnings = offlineState.passiveIncome * cappedSeconds;
         offlineState.balance += offlineEarnings;
         offlineState.totalEarned += offlineEarnings;
-        console.log(`[SaveManager] Offline for ${offlineSeconds}s → earned $${offlineEarnings.toFixed(0)}`);
+        console.log(`[SaveManager] Offline ${offlineSeconds}s → +$${offlineEarnings.toFixed(0)}`);
       }
 
       this.engine.loadState(offlineState);
 
-      // Load business state if present
       if (parsed.businesses) {
         this.bizManager.loadState(parsed.businesses as BusinessState[]);
         this.engine.setPassiveIncome(this.bizManager.getTotalPassiveIncome());
       }
 
-      // Load stock portfolio if present
       if (parsed.stocks) {
         this.stockMarket.loadState(parsed.stocks as { portfolio?: PortfolioEntry[] });
       }
 
-      // Load lifestyle if present
       if (parsed.lifestyle) {
         this.lifestyle.loadState(parsed.lifestyle as string[]);
       }

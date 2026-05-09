@@ -1,8 +1,6 @@
 /**
- * MainView — All DOM interaction lives here.
- *
- * Now supports tab navigation between Empire (clicker+shop) and Stocks.
- * Subscribes to EventBus for state changes.
+ * MainView — Professional banking dashboard layout.
+ * Sidebar navigation + main content area.
  */
 
 import { EventBus, GameEvents } from '../core/EventBus';
@@ -37,71 +35,84 @@ export class MainView {
 
   private render(): void {
     this.app.innerHTML = `
-      <div class="game-container">
-        <header class="top-bar">
-          <div class="logo">
-            <span class="logo-icon">💰</span>
-            <span class="logo-text">Billionaire Tycoon</span>
+      <div class="dashboard">
+        <!-- Sidebar -->
+        <aside class="sidebar">
+          <div class="sidebar-logo">
+            <span class="sidebar-logo-icon">🏦</span>
+            <span class="sidebar-logo-text">TYCOON<span class="logo-accent">BANK</span></span>
           </div>
-          <div class="save-indicator" id="save-indicator">
-            <span class="save-dot"></span>
-            <span>Saved</span>
-          </div>
-        </header>
 
-        <!-- Balance (always visible) -->
-        <section class="balance-section">
-          <div class="balance-label">YOUR FORTUNE</div>
-          <div class="balance-amount" id="balance-display">$0</div>
-          <div class="balance-sub">
-            <span class="stat-pill" id="passive-display">
-              <span class="stat-icon">⏱</span> $0/sec
-            </span>
-          </div>
-        </section>
-
-        <!-- Tab bar -->
-        <nav class="tab-bar">
-          <button class="tab-btn active" id="tab-empire" data-tab="empire">🏢 Empire</button>
-          <button class="tab-btn" id="tab-stocks" data-tab="stocks">📈 Stocks</button>
-          <button class="tab-btn" id="tab-lifestyle" data-tab="lifestyle">💎 Lifestyle</button>
-        </nav>
-
-        <!-- Empire tab content -->
-        <div class="tab-content" id="content-empire">
-          <section class="click-section">
-            <div class="particle-container" id="particle-container"></div>
-            <button class="click-btn" id="click-btn">
-              <span class="click-btn-icon">🤑</span>
-              <span class="click-btn-label">TAP TO EARN</span>
-              <span class="click-btn-power" id="click-power-display">+$1 per click</span>
+          <nav class="sidebar-nav">
+            <button class="nav-item active" id="tab-empire" data-tab="empire">
+              <span class="nav-icon">🏢</span>
+              <span class="nav-label">Empire</span>
             </button>
-          </section>
-          <div id="shop-anchor"></div>
-          <section class="stats-bar">
-            <div class="stat-card">
-              <div class="stat-value" id="total-clicks-display">0</div>
-              <div class="stat-label">Total Clicks</div>
-            </div>
-            <div class="stat-card">
-              <div class="stat-value" id="click-power-stat">1</div>
-              <div class="stat-label">Click Power</div>
-            </div>
-            <div class="stat-card">
-              <div class="stat-value" id="passive-stat">0</div>
-              <div class="stat-label">$/Second</div>
-            </div>
-          </section>
-        </div>
+            <button class="nav-item" id="tab-stocks" data-tab="stocks">
+              <span class="nav-icon">📈</span>
+              <span class="nav-label">Markets</span>
+            </button>
+            <button class="nav-item" id="tab-lifestyle" data-tab="lifestyle">
+              <span class="nav-icon">💎</span>
+              <span class="nav-label">Lifestyle</span>
+            </button>
+          </nav>
 
-        <!-- Stocks tab content (StocksPanel injects here) -->
-        <div class="tab-content" id="content-stocks" style="display:none"></div>
+          <div class="sidebar-footer">
+            <div class="save-indicator" id="save-indicator">
+              <span class="save-dot"></span>
+              <span>Saved</span>
+            </div>
+          </div>
+        </aside>
 
-        <!-- Lifestyle tab content (LifestylePanel injects here) -->
-        <div class="tab-content" id="content-lifestyle" style="display:none"></div>
+        <!-- Main Content -->
+        <main class="main-content">
+          <!-- Top Metrics Bar -->
+          <header class="metrics-bar">
+            <div class="metric-primary">
+              <div class="metric-label">NET WORTH</div>
+              <div class="metric-value" id="balance-display">$0</div>
+            </div>
+            <div class="metric-divider"></div>
+            <div class="metric-item">
+              <div class="metric-label">INCOME/SEC</div>
+              <div class="metric-value green" id="passive-display">$0</div>
+            </div>
+            <div class="metric-item">
+              <div class="metric-label">CLICK POWER</div>
+              <div class="metric-value" id="click-power-display">$1</div>
+            </div>
+            <div class="metric-item">
+              <div class="metric-label">TOTAL CLICKS</div>
+              <div class="metric-value" id="total-clicks-display">0</div>
+            </div>
+          </header>
 
-        <!-- News ticker (always visible) -->
-        <div id="news-anchor"></div>
+          <!-- Empire tab content -->
+          <div class="tab-content" id="content-empire">
+            <div class="empire-grid">
+              <section class="click-section">
+                <div class="particle-container" id="particle-container"></div>
+                <button class="click-btn" id="click-btn">
+                  <span class="click-btn-icon">💰</span>
+                  <span class="click-btn-label">EARN</span>
+                  <span class="click-btn-power" id="click-power-stat">+$1</span>
+                </button>
+              </section>
+              <div id="shop-anchor"></div>
+            </div>
+          </div>
+
+          <!-- Stocks tab content -->
+          <div class="tab-content" id="content-stocks" style="display:none"></div>
+
+          <!-- Lifestyle tab content -->
+          <div class="tab-content" id="content-lifestyle" style="display:none"></div>
+
+          <!-- News ticker -->
+          <div id="news-anchor"></div>
+        </main>
       </div>
     `;
 
@@ -132,11 +143,9 @@ export class MainView {
     if (this.activeTab === tab) return;
     this.activeTab = tab;
 
-    // Toggle active class on tab buttons
-    document.querySelectorAll('.tab-btn').forEach(el => el.classList.remove('active'));
+    document.querySelectorAll('.nav-item').forEach(el => el.classList.remove('active'));
     document.getElementById(`tab-${tab}`)?.classList.add('active');
 
-    // Toggle tab content visibility
     document.getElementById('content-empire')!.style.display = tab === 'empire' ? '' : 'none';
     document.getElementById('content-stocks')!.style.display = tab === 'stocks' ? '' : 'none';
     document.getElementById('content-lifestyle')!.style.display = tab === 'lifestyle' ? '' : 'none';
@@ -176,13 +185,11 @@ export class MainView {
   }
 
   private updateStats(state: EconomyState): void {
-    this.clickPowerEl.textContent = `+$${this.formatNumber(state.clickPower)} per click`;
-    this.passiveEl.innerHTML = `<span class="stat-icon">⏱</span> $${this.formatNumber(state.passiveIncome)}/sec`;
+    this.clickPowerEl.textContent = `$${this.formatNumber(state.clickPower)}`;
+    this.passiveEl.textContent = `$${this.formatNumber(state.passiveIncome)}`;
     this.totalClicksEl.textContent = this.formatNumber(state.totalClicks);
     const cpStat = document.getElementById('click-power-stat');
-    const psStat = document.getElementById('passive-stat');
-    if (cpStat) cpStat.textContent = this.formatNumber(state.clickPower);
-    if (psStat) psStat.textContent = this.formatNumber(state.passiveIncome);
+    if (cpStat) cpStat.textContent = `+$${this.formatNumber(state.clickPower)}`;
   }
 
   /* ── Juicy Visual Feedback ──────────────────────────────── */

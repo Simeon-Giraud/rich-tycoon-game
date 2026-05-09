@@ -1,3 +1,8 @@
+/**
+ * SDKManager — CrazyGames SDK integration.
+ * Handles gameplay signals, rewarded ads, and cloud saves.
+ */
+
 export class SDKManager {
   private static instance: SDKManager;
   private sdk: any;
@@ -15,69 +20,93 @@ export class SDKManager {
 
   private async initSDK() {
     try {
-      // The SDK script is loaded in index.html, so window.CrazyGames should be available
       if (window.CrazyGames && window.CrazyGames.SDK) {
         this.sdk = window.CrazyGames.SDK;
-        console.log('CrazyGames SDK initialized successfully');
+        console.log('[SDK] CrazyGames SDK initialized');
       } else {
-        console.warn('CrazyGames SDK not found on window object');
+        console.warn('[SDK] CrazyGames SDK not found — running in dev mode');
       }
     } catch (error) {
-      console.error('Error initializing CrazyGames SDK:', error);
+      console.error('[SDK] Init error:', error);
     }
   }
 
-  /**
-   * Signals that the gameplay has started.
-   * Should be called when the player starts playing or resumes after a pause.
-   */
+  public isAvailable(): boolean {
+    return !!this.sdk;
+  }
+
+  /* ── Gameplay Signals ───────────────────────────────────── */
+
   public startGameplay(): void {
-    if (this.sdk && this.sdk.game) {
+    if (this.sdk?.game) {
       this.sdk.game.gameplayStart();
-      console.log('Gameplay started');
     }
   }
 
-  /**
-   * Signals that the gameplay has stopped.
-   * Should be called when the player pauses the game or enters a menu.
-   */
   public stopGameplay(): void {
-    if (this.sdk && this.sdk.game) {
+    if (this.sdk?.game) {
       this.sdk.game.gameplayStop();
-      console.log('Gameplay stopped');
     }
   }
 
-  /**
-   * Shows a rewarded advertisement.
-   * @param onSuccess Callback executed when the ad is successfully finished.
-   */
+  /* ── Cloud Saves (CrazyGames Data API) ──────────────────── */
+
+  public async cloudSave(payload: string): Promise<boolean> {
+    if (!this.sdk?.data) {
+      console.log('[SDK] No data API — skipping cloud save');
+      return false;
+    }
+    try {
+      await this.sdk.data.save(payload);
+      console.log('[SDK] Cloud save successful');
+      return true;
+    } catch (err) {
+      console.error('[SDK] Cloud save failed:', err);
+      return false;
+    }
+  }
+
+  public async cloudLoad(): Promise<string | null> {
+    if (!this.sdk?.data) {
+      console.log('[SDK] No data API — skipping cloud load');
+      return null;
+    }
+    try {
+      const data = await this.sdk.data.load();
+      if (data) {
+        console.log('[SDK] Cloud load successful');
+        return data;
+      }
+      return null;
+    } catch (err) {
+      console.error('[SDK] Cloud load failed:', err);
+      return null;
+    }
+  }
+
+  /* ── Rewarded Ads ───────────────────────────────────────── */
+
   public showRewardedAd(onSuccess: () => void): void {
-    if (!this.sdk || !this.sdk.ad) {
-      console.warn('SDK or Ad module not available, executing success callback immediately');
+    if (!this.sdk?.ad) {
+      console.warn('[SDK] No ad module — granting reward directly (dev mode)');
       onSuccess();
       return;
     }
 
     this.sdk.ad.requestAd('rewarded', {
       adStarted: () => {
-        console.log('Rewarded ad started');
-        this.stopGameplay(); // Automatically stop gameplay when ad starts
+        this.stopGameplay();
       },
       adFinished: () => {
-        console.log('Rewarded ad finished');
-        this.startGameplay(); // Resume gameplay
+        this.startGameplay();
         onSuccess();
       },
       adError: (error: string) => {
-        console.error('Rewarded ad error:', error);
-        this.startGameplay(); // Resume gameplay even on error
-        // Note: Depending on policy, you might still want to reward or notify the user
+        console.error('[SDK] Rewarded ad error:', error);
+        this.startGameplay();
       },
     });
   }
 }
 
-// Export a singleton instance
 export const sdkManager = SDKManager.getInstance();

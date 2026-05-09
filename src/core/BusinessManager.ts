@@ -41,16 +41,33 @@ export interface BusinessView {
 /* ── Business catalog ─────────────────────────────────────── */
 
 const BUSINESSES: BusinessDefinition[] = [
-  { id: 'lemonade_stand', name: 'Lemonade Stand', icon: '🍋', baseCost: 15, baseRevenue: 0.5, growthRate: 1.15 },
-  { id: 'vending_machine', name: 'Vending Machine', icon: '🥤', baseCost: 150, baseRevenue: 4, growthRate: 1.15 },
-  { id: 'coffee_cart', name: 'Coffee Cart', icon: '☕', baseCost: 1_200, baseRevenue: 25, growthRate: 1.15 },
-  { id: 'apparel_store', name: 'Apparel Store', icon: '👕', baseCost: 6_500, baseRevenue: 150, growthRate: 1.15 },
-  { id: 'cloud_kitchen', name: 'Cloud Kitchen', icon: '🍳', baseCost: 25_000, baseRevenue: 600, growthRate: 1.15 },
-  { id: 'tech_startup', name: 'Tech Startup', icon: '💻', baseCost: 120_000, baseRevenue: 2_200, growthRate: 1.15 },
-  { id: 'cargo_port', name: 'Cargo Port', icon: '🚢', baseCost: 1_500_000, baseRevenue: 12_000, growthRate: 1.15 },
-  { id: 'skyscraper', name: 'Skyscraper', icon: '🏢', baseCost: 15_000_000, baseRevenue: 85_000, growthRate: 1.15 },
-  { id: 'space_tourism', name: 'Space Tourism', icon: '🚀', baseCost: 250_000_000, baseRevenue: 1_200_000, growthRate: 1.15 },
-  { id: 'mars_colony', name: 'Mars Colony', icon: '🪐', baseCost: 5_000_000_000, baseRevenue: 35_000_000, growthRate: 1.15 },
+  // Tier 1 — Starter
+  { id: 'lemonade_stand',  name: 'Lemonade Stand',    icon: '🍋', baseCost: 15,             baseRevenue: 0.1,        growthRate: 1.15 },
+  { id: 'newspaper_route', name: 'Newspaper Route',    icon: '📰', baseCost: 100,            baseRevenue: 0.5,        growthRate: 1.15 },
+  { id: 'vending_machine', name: 'Vending Machine',    icon: '🥤', baseCost: 500,            baseRevenue: 2,          growthRate: 1.15 },
+  // Tier 2 — Small Biz
+  { id: 'food_truck',      name: 'Food Truck',         icon: '🌮', baseCost: 2_500,          baseRevenue: 8,          growthRate: 1.15 },
+  { id: 'coffee_cart',     name: 'Coffee Cart',        icon: '☕', baseCost: 10_000,         baseRevenue: 25,         growthRate: 1.15 },
+  { id: 'barbershop',      name: 'Barbershop',         icon: '💈', baseCost: 40_000,         baseRevenue: 80,         growthRate: 1.15 },
+  // Tier 3 — Mid Market
+  { id: 'apparel_store',   name: 'Apparel Store',      icon: '👕', baseCost: 150_000,        baseRevenue: 250,        growthRate: 1.15 },
+  { id: 'cloud_kitchen',   name: 'Cloud Kitchen',      icon: '🍳', baseCost: 500_000,        baseRevenue: 700,        growthRate: 1.15 },
+  { id: 'gym_chain',       name: 'Gym Chain',          icon: '🏋️', baseCost: 1_500_000,      baseRevenue: 1_800,      growthRate: 1.15 },
+  // Tier 4 — Growth
+  { id: 'tech_startup',    name: 'Tech Startup',       icon: '💻', baseCost: 5_000_000,      baseRevenue: 5_000,      growthRate: 1.15 },
+  { id: 'hotel_resort',    name: 'Hotel Resort',       icon: '🏨', baseCost: 20_000_000,     baseRevenue: 15_000,     growthRate: 1.15 },
+  { id: 'cargo_port',      name: 'Cargo Port',         icon: '🚢', baseCost: 75_000_000,     baseRevenue: 45_000,     growthRate: 1.15 },
+  // Tier 5 — Enterprise
+  { id: 'media_network',   name: 'Media Network',      icon: '📡', baseCost: 250_000_000,    baseRevenue: 120_000,    growthRate: 1.15 },
+  { id: 'skyscraper',      name: 'Skyscraper',         icon: '🏢', baseCost: 1_000_000_000,  baseRevenue: 400_000,    growthRate: 1.15 },
+  { id: 'pharma_corp',     name: 'Pharma Corp',        icon: '💊', baseCost: 5_000_000_000,  baseRevenue: 1_500_000,  growthRate: 1.15 },
+  // Tier 6 — Mega
+  { id: 'space_tourism',   name: 'Space Tourism',      icon: '🚀', baseCost: 25_000_000_000, baseRevenue: 6_000_000,  growthRate: 1.15 },
+  { id: 'fusion_plant',    name: 'Fusion Plant',       icon: '⚡', baseCost: 100_000_000_000,baseRevenue: 20_000_000, growthRate: 1.15 },
+  { id: 'mars_colony',     name: 'Mars Colony',        icon: '🪐', baseCost: 500_000_000_000,baseRevenue: 80_000_000, growthRate: 1.15 },
+  // Tier 7 — Endgame
+  { id: 'dyson_sphere',    name: 'Dyson Sphere',       icon: '☀️', baseCost: 5_000_000_000_000,   baseRevenue: 500_000_000,   growthRate: 1.15 },
+  { id: 'galaxy_empire',   name: 'Galaxy Empire',      icon: '🌌', baseCost: 100_000_000_000_000, baseRevenue: 8_000_000_000, growthRate: 1.15 },
 ];
 
 export class BusinessManager {
